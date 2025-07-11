@@ -44,7 +44,7 @@ const NominatePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     const requiredFields = Object.values(formData);
     if (requiredFields.some(field => !field.trim())) {
@@ -74,7 +74,7 @@ const NominatePage = () => {
       if (error) throw error;
 
       setIsSubmitted(true);
-      
+
       toast({
         title: "Nomination submitted successfully!",
         description: "Thank you for honoring a job creator.",
@@ -105,7 +105,7 @@ const NominatePage = () => {
             <p className="text-lg text-muted-foreground mb-8">
               Thank you for taking the time to honor a job creator. Your nomination is a spotlight on hope, creativity, and progress. We'll be featuring select entrepreneurs on our website and social media pages as part of our ongoing celebration of change makers.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/">
                 <Button variant="hero" size="lg">
@@ -113,7 +113,7 @@ const NominatePage = () => {
                   Back to Home
                 </Button>
               </Link>
-              
+
               <Link to="/entrepreneurs">
                 <Button variant="outline" size="lg">
                   View Featured Entrepreneurs
@@ -135,11 +135,11 @@ const NominatePage = () => {
             <ArrowLeft className="mr-2" />
             Back to Home
           </Link>
-          
+
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
             Nominate an Entrepreneur
           </h1>
-          
+
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Help us recognize exceptional entrepreneurs who are creating jobs, building communities, and driving positive change through their businesses.
           </p>
@@ -165,7 +165,7 @@ const NominatePage = () => {
                   <p className="text-muted-foreground">Must have at least 3 employees, demonstrating their commitment to job creation and economic growth.</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-3">
                 <MapPin className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
                 <div>
@@ -192,7 +192,7 @@ const NominatePage = () => {
                 <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">
                   Entrepreneur Information
                 </h3>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="entrepreneurName" className="text-sm font-medium">
@@ -206,7 +206,7 @@ const NominatePage = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="entrepreneurPhone" className="text-sm font-medium">
                       Entrepreneur's Phone Number *
@@ -216,7 +216,7 @@ const NominatePage = () => {
                       type="tel"
                       value={formData.entrepreneurPhone}
                       onChange={(e) => handleInputChange("entrepreneurPhone", e.target.value)}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+254 XXXXXXXXX"
                       required
                     />
                   </div>
@@ -228,7 +228,7 @@ const NominatePage = () => {
                 <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">
                   Business Information
                 </h3>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="businessName" className="text-sm font-medium">
                     Name of the Business or Venture *
@@ -241,7 +241,7 @@ const NominatePage = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="businessLocation" className="text-sm font-medium">
                     Business Location (Town/County/Country) *
@@ -255,7 +255,7 @@ const NominatePage = () => {
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="businessType" className="text-sm font-medium">
                     Type of Business/Industry *
@@ -280,7 +280,7 @@ const NominatePage = () => {
                 <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">
                   Your Information
                 </h3>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="nominatorName" className="text-sm font-medium">
@@ -294,7 +294,7 @@ const NominatePage = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="nominatorPhone" className="text-sm font-medium">
                       Your Phone Number *
@@ -304,7 +304,7 @@ const NominatePage = () => {
                       type="tel"
                       value={formData.nominatorPhone}
                       onChange={(e) => handleInputChange("nominatorPhone", e.target.value)}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+254 XXXXXXXXX"
                       required
                     />
                   </div>
