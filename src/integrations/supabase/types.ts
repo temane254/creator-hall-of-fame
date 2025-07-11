@@ -14,7 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      entrepreneurs: {
+        Row: {
+          bio: string | null
+          company_logo_url: string | null
+          created_at: string
+          id: string
+          industry: string
+          name: string
+          nomination_id: string | null
+          profile_photo_url: string | null
+          updated_at: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          bio?: string | null
+          company_logo_url?: string | null
+          created_at?: string
+          id?: string
+          industry: string
+          name: string
+          nomination_id?: string | null
+          profile_photo_url?: string | null
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          bio?: string | null
+          company_logo_url?: string | null
+          created_at?: string
+          id?: string
+          industry?: string
+          name?: string
+          nomination_id?: string | null
+          profile_photo_url?: string | null
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrepreneurs_nomination_id_fkey"
+            columns: ["nomination_id"]
+            isOneToOne: false
+            referencedRelation: "nominations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nominations: {
+        Row: {
+          business_location: string
+          business_name: string
+          business_type: string
+          created_at: string
+          entrepreneur_name: string
+          entrepreneur_phone: string
+          id: string
+          nominator_name: string
+          nominator_phone: string
+          notes: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_location: string
+          business_name: string
+          business_type: string
+          created_at?: string
+          entrepreneur_name: string
+          entrepreneur_phone: string
+          id?: string
+          nominator_name: string
+          nominator_phone: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_location?: string
+          business_name?: string
+          business_type?: string
+          created_at?: string
+          entrepreneur_name?: string
+          entrepreneur_phone?: string
+          id?: string
+          nominator_name?: string
+          nominator_phone?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

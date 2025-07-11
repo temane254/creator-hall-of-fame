@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Award, CheckCircle, Users, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const NominatePage = () => {
   const { toast } = useToast();
@@ -41,7 +42,7 @@ const NominatePage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
@@ -55,14 +56,37 @@ const NominatePage = () => {
       return;
     }
 
-    // Simulate form submission
-    console.log("Nomination submitted:", formData);
-    setIsSubmitted(true);
-    
-    toast({
-      title: "Nomination submitted successfully!",
-      description: "Thank you for honoring a job creator.",
-    });
+    try {
+      const { error } = await supabase
+        .from('nominations')
+        .insert([
+          {
+            entrepreneur_name: formData.entrepreneurName,
+            entrepreneur_phone: formData.entrepreneurPhone,
+            business_name: formData.businessName,
+            business_location: formData.businessLocation,
+            business_type: formData.businessType,
+            nominator_name: formData.nominatorName,
+            nominator_phone: formData.nominatorPhone,
+          }
+        ]);
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      
+      toast({
+        title: "Nomination submitted successfully!",
+        description: "Thank you for honoring a job creator.",
+      });
+    } catch (error) {
+      console.error('Error submitting nomination:', error);
+      toast({
+        title: "Error",
+        description: "There was an error submitting your nomination. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isSubmitted) {

@@ -41,6 +41,13 @@ const HomePage = () => {
                 <Users className="ml-2" />
               </Button>
             </Link>
+            
+            <Link to="/auth">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/30">
+                Admin Login
+                <ArrowRight className="ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

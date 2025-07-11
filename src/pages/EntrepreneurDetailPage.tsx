@@ -1,14 +1,66 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, MapPin, Calendar, MessageCircle, Phone } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { featuredEntrepreneurs } from "@/data/entrepreneurs";
+import { supabase } from "@/integrations/supabase/client";
 import badgeImage from "@/assets/badge-of-honor.png";
+
+interface Entrepreneur {
+  id: string;
+  name: string;
+  industry: string;
+  bio: string;
+  profile_photo_url: string;
+  company_logo_url: string;
+  whatsapp_number: string;
+}
 
 const EntrepreneurDetailPage = () => {
   const { id } = useParams();
-  const entrepreneur = featuredEntrepreneurs.find(e => e.id === id);
+  const [entrepreneur, setEntrepreneur] = useState<Entrepreneur | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchEntrepreneur(id);
+    }
+  }, [id]);
+
+  const fetchEntrepreneur = async (entrepreneurId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('entrepreneurs')
+        .select('*')
+        .eq('id', entrepreneurId)
+        .single();
+      
+      if (error) throw error;
+      setEntrepreneur(data);
+    } catch (error) {
+      console.error('Error fetching entrepreneur:', error);
+      setEntrepreneur(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWhatsAppClick = () => {
+    if (!entrepreneur?.whatsapp_number) return;
+    const phoneNumber = entrepreneur.whatsapp_number.replace(/\D/g, ''); // Remove non-digits
+    const message = `Hi ${entrepreneur.name}, I found your profile on the Job Creators Hall of Fame website. I'd love to connect with you!`;
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center px-6">
+        <div>Loading entrepreneur details...</div>
+      </div>
+    );
+  }
 
   if (!entrepreneur) {
     return (
@@ -29,13 +81,6 @@ const EntrepreneurDetailPage = () => {
     );
   }
 
-  const handleWhatsAppClick = () => {
-    const phoneNumber = entrepreneur.phone.replace(/\D/g, ''); // Remove non-digits
-    const message = `Hi ${entrepreneur.name}, I found your profile on the Job Creators Hall of Fame website. I'd love to connect with you!`;
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-subtle py-12 px-6">
       <div className="max-w-4xl mx-auto">
@@ -55,7 +100,7 @@ const EntrepreneurDetailPage = () => {
               <div className="text-center">
                 <div className="relative inline-block">
                   <img
-                    src={entrepreneur.profileImage}
+                    src={entrepreneur.profile_photo_url || "/placeholder.svg"}
                     alt={entrepreneur.name}
                     className="w-48 h-48 rounded-full object-cover border-4 border-gold/30 shadow-gold"
                   />
@@ -76,7 +121,7 @@ const EntrepreneurDetailPage = () => {
                 </h1>
                 
                 <h2 className="text-2xl font-semibold text-primary mb-6">
-                  {entrepreneur.businessName}
+                  Featured Entrepreneur
                 </h2>
 
                 <div className="grid sm:grid-cols-2 gap-4 mb-6">
@@ -87,18 +132,8 @@ const EntrepreneurDetailPage = () => {
                   </div>
                   
                   <div className="flex items-center text-muted-foreground">
-                    <MapPin className="w-5 h-5 mr-2" />
-                    <span>{entrepreneur.location}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-muted-foreground">
                     <Users className="w-5 h-5 mr-2" />
-                    <span>{entrepreneur.employees} employees</span>
-                  </div>
-                  
-                  <div className="flex items-center text-muted-foreground">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    <span>Founded {entrepreneur.founded}</span>
+                    <span>Job Creator</span>
                   </div>
                 </div>
 
@@ -114,14 +149,16 @@ const EntrepreneurDetailPage = () => {
                     WhatsApp this Entrepreneur
                   </Button>
                   
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    onClick={() => window.open(`tel:${entrepreneur.phone}`, '_self')}
-                  >
-                    <Phone className="mr-2" />
-                    Call
-                  </Button>
+                  {entrepreneur.whatsapp_number && (
+                    <Button 
+                      variant="outline" 
+                      size="lg"
+                      onClick={() => window.open(`tel:${entrepreneur.whatsapp_number}`, '_self')}
+                    >
+                      <Phone className="mr-2" />
+                      Call
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -136,11 +173,15 @@ const EntrepreneurDetailPage = () => {
             </h3>
             
             <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
-              {entrepreneur.bio.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-4 last:mb-0">
-                  {paragraph}
-                </p>
-              ))}
+              {entrepreneur.bio ? (
+                entrepreneur.bio.split('\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4 last:mb-0">
+                    {paragraph}
+                  </p>
+                ))
+              ) : (
+                <p>This entrepreneur is making a positive impact in their community through job creation and business innovation.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -152,13 +193,13 @@ const EntrepreneurDetailPage = () => {
               Business Impact
             </h3>
             
-            <div className="grid sm:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 gap-6">
               <div className="text-center">
                 <div className="bg-gradient-hero rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <div className="text-3xl font-bold text-primary mb-2">
-                  {entrepreneur.employees}
+                  3+
                 </div>
                 <p className="text-muted-foreground">Jobs Created</p>
               </div>
@@ -168,17 +209,9 @@ const EntrepreneurDetailPage = () => {
                   <Calendar className="w-8 h-8 text-foreground" />
                 </div>
                 <div className="text-3xl font-bold text-gold mb-2">
-                  {new Date().getFullYear() - parseInt(entrepreneur.founded)}
+                  {entrepreneur.industry}
                 </div>
-                <p className="text-muted-foreground">Years in Business</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="bg-gradient-hero rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="w-8 h-8 text-primary-foreground" />
-                </div>
-                <div className="text-3xl font-bold text-primary mb-2">1</div>
-                <p className="text-muted-foreground">Location</p>
+                <p className="text-muted-foreground">Industry</p>
               </div>
             </div>
           </CardContent>
@@ -205,15 +238,17 @@ const EntrepreneurDetailPage = () => {
                 Start WhatsApp Chat
               </Button>
               
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="text-lg px-8 py-4 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                onClick={() => window.open(`tel:${entrepreneur.phone}`, '_self')}
-              >
-                <Phone className="mr-2" />
-                Call Now
-              </Button>
+              {entrepreneur.whatsapp_number && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  className="text-lg px-8 py-4 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  onClick={() => window.open(`tel:${entrepreneur.whatsapp_number}`, '_self')}
+                >
+                  <Phone className="mr-2" />
+                  Call Now
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
