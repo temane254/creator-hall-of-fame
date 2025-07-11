@@ -15,7 +15,7 @@ export function AuthPage() {
 
   // Redirect if already authenticated
   if (user && !loading) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -53,7 +53,7 @@ export function AuthPage() {
     const password = formData.get('password') as string;
     const fullName = formData.get('fullName') as string;
 
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName);  
     
     if (error) {
       toast({

@@ -29,7 +29,7 @@ interface Nomination {
 }
 
 export function AdminDashboard() {
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const { toast } = useToast();
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [filteredNominations, setFilteredNominations] = useState<Nomination[]>([]);
@@ -37,16 +37,12 @@ export function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Redirect if not authenticated or not admin
-  if (!loading && (!user || profile?.role !== 'admin')) {
-    return <Navigate to="/auth" replace />;
-  }
-
   useEffect(() => {
-    if (user && profile?.role === 'admin') {
+    console.log(user);
+    if (user && user?.role === 'authenticated') {
       fetchNominations();
     }
-  }, [user, profile]);
+  }, [user]);
 
   useEffect(() => {
     filterNominations();
@@ -58,8 +54,9 @@ export function AdminDashboard() {
         .from('nominations')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
+      console.log("data", data);
       setNominations((data || []) as Nomination[]);
     } catch (error) {
       console.error('Error fetching nominations:', error);
@@ -84,7 +81,7 @@ export function AdminDashboard() {
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(nom => 
+      filtered = filtered.filter(nom =>
         nom.entrepreneur_name.toLowerCase().includes(term) ||
         nom.business_location.toLowerCase().includes(term) ||
         nom.business_type.toLowerCase().includes(term) ||
@@ -101,16 +98,16 @@ export function AdminDashboard() {
         .from('nominations')
         .update({ status, notes })
         .eq('id', id);
-      
+
       if (error) throw error;
-      
+
       // Update local state
-      setNominations(prev => 
-        prev.map(nom => 
-          nom.id === id ? { ...nom, status: status as any, notes: notes || nom.notes } : nom
+      setNominations(prev =>
+        prev.map(nom =>
+          nom.id === id ? { ...nom, status: status as Nomination['status'], notes: notes || nom.notes } : nom
         )
       );
-      
+
       toast({
         title: "Success",
         description: `Nomination ${status} successfully`,
@@ -133,6 +130,10 @@ export function AdminDashboard() {
     }
   };
 
+  if (!loading && (!user || user?.role !== 'authenticated')) {
+    return <Navigate to="/auth" replace />;
+  }
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -144,11 +145,11 @@ export function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="md:container mx-auto px-2 md:px-6 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              Welcome, {profile?.full_name || profile?.email}
+              Welcome, {user?.user_metadata?.full_name || user?.email}
             </span>
             <Button variant="outline" onClick={signOut}>
               Sign Out
@@ -157,17 +158,17 @@ export function AdminDashboard() {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="md:container mx-auto md:px-6 py-8">
         <Tabs defaultValue="nominations" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="nominations">Nominations</TabsTrigger>
             <TabsTrigger value="entrepreneurs">Featured Entrepreneurs</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="nominations" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm lg:text-xl">
                   <Search className="h-5 w-5" />
                   Search & Filter Nominations
                 </CardTitle>
@@ -175,7 +176,7 @@ export function AdminDashboard() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="search">Search by name, location, or industry</Label>
+                    <Label htmlFor="search" className="">Search by name, location, or industry</Label>
                     <Input
                       id="search"
                       placeholder="Search nominations..."
@@ -225,7 +226,7 @@ export function AdminDashboard() {
                               {new Date(nomination.created_at).toLocaleDateString()}
                             </div>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div className="flex items-center gap-2">
                               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -271,7 +272,7 @@ export function AdminDashboard() {
                               rows={3}
                             />
                           </div>
-                          
+
                           <div className="flex gap-2">
                             <Button
                               size="sm"
@@ -310,7 +311,7 @@ export function AdminDashboard() {
                       </div>
                     </Card>
                   ))}
-                  
+
                   {filteredNominations.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       No nominations found matching your criteria.
@@ -320,7 +321,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="entrepreneurs">
             <Card>
               <CardHeader>
