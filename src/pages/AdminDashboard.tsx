@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Phone, MapPin, Building2, User, Calendar } from 'lucide-react';
+import { Search, Phone, MapPin, Building2, User, Calendar, Edit, Plus, Image } from 'lucide-react';
 
 interface Nomination {
   id: string;
@@ -28,19 +29,36 @@ interface Nomination {
   created_at: string;
 }
 
+interface Entrepreneur {
+  id: string;
+  name: string;
+  bio: string | null;
+  industry: string;
+  profile_photo_url: string | null;
+  company_logo_url: string | null;
+  whatsapp_number: string | null;
+  nomination_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export function AdminDashboard() {
   const { user, signOut, loading } = useAuth();
   const { toast } = useToast();
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [filteredNominations, setFilteredNominations] = useState<Nomination[]>([]);
+  const [entrepreneurs, setEntrepreneurs] = useState<Entrepreneur[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [editingEntrepreneur, setEditingEntrepreneur] = useState<Entrepreneur | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log(user);
     if (user && user?.role === 'authenticated') {
       fetchNominations();
+      fetchEntrepreneurs();
     }
   }, [user]);
 
@@ -92,6 +110,25 @@ export function AdminDashboard() {
     setFilteredNominations(filtered);
   };
 
+  const fetchEntrepreneurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('entrepreneurs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEntrepreneurs((data || []) as Entrepreneur[]);
+    } catch (error) {
+      console.error('Error fetching entrepreneurs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch entrepreneurs",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updateNominationStatus = async (id: string, status: string, notes?: string) => {
     try {
       const { error } = await supabase
@@ -108,6 +145,14 @@ export function AdminDashboard() {
         )
       );
 
+      // If approved, create/update entrepreneur entry
+      if (status === 'approved') {
+        const nomination = nominations.find(n => n.id === id);
+        if (nomination) {
+          await createEntrepreneurFromNomination(nomination);
+        }
+      }
+
       toast({
         title: "Success",
         description: `Nomination ${status} successfully`,
@@ -117,6 +162,96 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to update nomination",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createEntrepreneurFromNomination = async (nomination: Nomination) => {
+    try {
+      const { error } = await supabase
+        .from('entrepreneurs')
+        .upsert({
+          name: nomination.entrepreneur_name,
+          industry: nomination.business_type,
+          whatsapp_number: nomination.entrepreneur_phone,
+          nomination_id: nomination.id,
+        });
+
+      if (error) throw error;
+      
+      // Refresh entrepreneurs list
+      fetchEntrepreneurs();
+      
+      toast({
+        title: "Success",
+        description: "Entrepreneur profile created successfully",
+      });
+    } catch (error) {
+      console.error('Error creating entrepreneur:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create entrepreneur profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateEntrepreneur = async (entrepreneur: Entrepreneur) => {
+    try {
+      if (entrepreneur.id && entrepreneurs.find(ent => ent.id === entrepreneur.id)) {
+        // Update existing entrepreneur
+        const { error } = await supabase
+          .from('entrepreneurs')
+          .update({
+            name: entrepreneur.name,
+            bio: entrepreneur.bio,
+            industry: entrepreneur.industry,
+            profile_photo_url: entrepreneur.profile_photo_url,
+            company_logo_url: entrepreneur.company_logo_url,
+            whatsapp_number: entrepreneur.whatsapp_number,
+          })
+          .eq('id', entrepreneur.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setEntrepreneurs(prev =>
+          prev.map(ent => ent.id === entrepreneur.id ? entrepreneur : ent)
+        );
+      } else {
+        // Create new entrepreneur
+        const { data, error } = await supabase
+          .from('entrepreneurs')
+          .insert({
+            name: entrepreneur.name,
+            bio: entrepreneur.bio,
+            industry: entrepreneur.industry,
+            profile_photo_url: entrepreneur.profile_photo_url,
+            company_logo_url: entrepreneur.company_logo_url,
+            whatsapp_number: entrepreneur.whatsapp_number,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Add to local state
+        setEntrepreneurs(prev => [data, ...prev]);
+      }
+
+      setIsDialogOpen(false);
+      setEditingEntrepreneur(null);
+
+      toast({
+        title: "Success",
+        description: entrepreneur.id ? "Entrepreneur updated successfully" : "Entrepreneur created successfully",
+      });
+    } catch (error) {
+      console.error('Error saving entrepreneur:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save entrepreneur",
         variant: "destructive",
       });
     }
@@ -322,21 +457,248 @@ export function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="entrepreneurs">
+          <TabsContent value="entrepreneurs" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Featured Entrepreneurs Management</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Featured Entrepreneurs Management
+                  <Button 
+                    onClick={() => {
+                      setEditingEntrepreneur({
+                        id: '',
+                        name: '',
+                        bio: '',
+                        industry: '',
+                        profile_photo_url: '',
+                        company_logo_url: '',
+                        whatsapp_number: '',
+                        nomination_id: null,
+                        created_at: '',
+                        updated_at: ''
+                      });
+                      setIsDialogOpen(true);
+                    }}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Entrepreneur
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Feature to manage featured entrepreneurs will be implemented here.
-                  You can promote approved nominations to the featured entrepreneurs section.
-                </p>
+                <div className="space-y-4">
+                  {entrepreneurs.map((entrepreneur) => (
+                    <Card key={entrepreneur.id} className="p-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="lg:col-span-3 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                              {entrepreneur.profile_photo_url ? (
+                                <img
+                                  src={entrepreneur.profile_photo_url}
+                                  alt={entrepreneur.name}
+                                  className="h-16 w-16 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                  <User className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div>
+                                <h3 className="text-lg font-semibold text-primary">
+                                  {entrepreneur.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {entrepreneur.industry}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            {entrepreneur.whatsapp_number && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <span><strong>WhatsApp:</strong> {entrepreneur.whatsapp_number}</span>
+                              </div>
+                            )}
+                            {entrepreneur.company_logo_url && (
+                              <div className="flex items-center gap-2">
+                                <Image className="h-4 w-4 text-muted-foreground" />
+                                <span><strong>Company Logo:</strong> Available</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {entrepreneur.bio && (
+                            <div className="pt-2 border-t">
+                              <Label className="text-sm font-medium">Bio:</Label>
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-3">
+                                {entrepreneur.bio}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingEntrepreneur(entrepreneur);
+                              setIsDialogOpen(true);
+                            }}
+                            className="w-full"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Details
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+
+                  {entrepreneurs.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No entrepreneurs found. Approve nominations to create entrepreneur profiles.
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
+
+            {/* Edit Entrepreneur Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingEntrepreneur?.id ? 'Edit Entrepreneur' : 'Add New Entrepreneur'}
+                  </DialogTitle>
+                </DialogHeader>
+                {editingEntrepreneur && (
+                  <EntrepreneurForm
+                    entrepreneur={editingEntrepreneur}
+                    onSave={updateEntrepreneur}
+                    onCancel={() => {
+                      setIsDialogOpen(false);
+                      setEditingEntrepreneur(null);
+                    }}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
       </main>
     </div>
+  );
+}
+
+// EntrepreneurForm component
+interface EntrepreneurFormProps {
+  entrepreneur: Entrepreneur;
+  onSave: (entrepreneur: Entrepreneur) => void;
+  onCancel: () => void;
+}
+
+function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormProps) {
+  const [formData, setFormData] = useState<Entrepreneur>(entrepreneur);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.id) {
+      onSave(formData);
+    } else {
+      // For new entrepreneurs, we need to create them
+      onSave({ ...formData, id: crypto.randomUUID() });
+    }
+  };
+
+  const handleChange = (field: keyof Entrepreneur, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name *</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => handleChange('name', e.target.value)}
+            placeholder="Entrepreneur name"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="industry">Industry *</Label>
+          <Input
+            id="industry"
+            value={formData.industry}
+            onChange={(e) => handleChange('industry', e.target.value)}
+            placeholder="Industry type"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bio">Bio</Label>
+        <Textarea
+          id="bio"
+          value={formData.bio || ''}
+          onChange={(e) => handleChange('bio', e.target.value)}
+          placeholder="Tell us about the entrepreneur..."
+          rows={4}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="whatsapp">WhatsApp Number</Label>
+          <Input
+            id="whatsapp"
+            value={formData.whatsapp_number || ''}
+            onChange={(e) => handleChange('whatsapp_number', e.target.value)}
+            placeholder="+1234567890"
+            type="tel"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="profile_photo">Profile Photo URL</Label>
+          <Input
+            id="profile_photo"
+            value={formData.profile_photo_url || ''}
+            onChange={(e) => handleChange('profile_photo_url', e.target.value)}
+            placeholder="https://example.com/photo.jpg"
+            type="url"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="company_logo">Company Logo URL</Label>
+        <Input
+          id="company_logo"
+          value={formData.company_logo_url || ''}
+          onChange={(e) => handleChange('company_logo_url', e.target.value)}
+          placeholder="https://example.com/logo.png"
+          type="url"
+        />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          {entrepreneur.id ? 'Update' : 'Create'} Entrepreneur
+        </Button>
+      </div>
+    </form>
   );
 }
