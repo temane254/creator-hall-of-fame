@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Phone, MapPin, Building2, User, Calendar, Edit, Plus, Image } from 'lucide-react';
+import { Search, Phone, MapPin, Building2, User, Calendar, Edit, Plus, Image, Upload, Briefcase } from 'lucide-react';
 
 interface Nomination {
   id: string;
@@ -38,6 +38,7 @@ interface Entrepreneur {
   company_logo_url: string | null;
   whatsapp_number: string | null;
   nomination_id: string | null;
+  jobs_created: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -169,9 +170,24 @@ export function AdminDashboard() {
 
   const createEntrepreneurFromNomination = async (nomination: Nomination) => {
     try {
+      // Check if entrepreneur already exists for this nomination
+      const { data: existingEntrepreneur } = await supabase
+        .from('entrepreneurs')
+        .select('id')
+        .eq('nomination_id', nomination.id)
+        .maybeSingle();
+
+      if (existingEntrepreneur) {
+        toast({
+          title: "Already exists",
+          description: "An entrepreneur profile already exists for this nomination.",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('entrepreneurs')
-        .upsert({
+        .insert({
           name: nomination.entrepreneur_name,
           industry: nomination.business_type,
           whatsapp_number: nomination.entrepreneur_phone,
@@ -210,6 +226,7 @@ export function AdminDashboard() {
             profile_photo_url: entrepreneur.profile_photo_url,
             company_logo_url: entrepreneur.company_logo_url,
             whatsapp_number: entrepreneur.whatsapp_number,
+            jobs_created: entrepreneur.jobs_created,
           })
           .eq('id', entrepreneur.id);
 
@@ -230,6 +247,7 @@ export function AdminDashboard() {
             profile_photo_url: entrepreneur.profile_photo_url,
             company_logo_url: entrepreneur.company_logo_url,
             whatsapp_number: entrepreneur.whatsapp_number,
+            jobs_created: entrepreneur.jobs_created,
           })
           .select()
           .single();
@@ -473,6 +491,7 @@ export function AdminDashboard() {
                         company_logo_url: '',
                         whatsapp_number: '',
                         nomination_id: null,
+                        jobs_created: 0,
                         created_at: '',
                         updated_at: ''
                       });
@@ -515,11 +534,17 @@ export function AdminDashboard() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             {entrepreneur.whatsapp_number && (
                               <div className="flex items-center gap-2">
                                 <Phone className="h-4 w-4 text-muted-foreground" />
                                 <span><strong>WhatsApp:</strong> {entrepreneur.whatsapp_number}</span>
+                              </div>
+                            )}
+                            {entrepreneur.jobs_created !== null && entrepreneur.jobs_created > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                <span><strong>Jobs Created:</strong> {entrepreneur.jobs_created}</span>
                               </div>
                             )}
                             {entrepreneur.company_logo_url && (
@@ -603,6 +628,8 @@ interface EntrepreneurFormProps {
 
 function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormProps) {
   const [formData, setFormData] = useState<Entrepreneur>(entrepreneur);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -614,11 +641,56 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
     }
   };
 
-  const handleChange = (field: keyof Entrepreneur, value: string) => {
+  const handleChange = (field: keyof Entrepreneur, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const uploadImage = async (file: File) => {
+    try {
+      setUploading(true);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from('entrepreneur-photos')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data } = supabase.storage
+        .from('entrepreneur-photos')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({
+        ...prev,
+        profile_photo_url: data.publicUrl
+      }));
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadImage(file);
+    }
   };
 
   return (
@@ -669,14 +741,50 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="profile_photo">Profile Photo URL</Label>
+          <Label htmlFor="jobs_created">Jobs Created</Label>
           <Input
-            id="profile_photo"
-            value={formData.profile_photo_url || ''}
-            onChange={(e) => handleChange('profile_photo_url', e.target.value)}
-            placeholder="https://example.com/photo.jpg"
-            type="url"
+            id="jobs_created"
+            value={formData.jobs_created || 0}
+            onChange={(e) => handleChange('jobs_created', parseInt(e.target.value) || 0)}
+            placeholder="0"
+            type="number"
+            min="0"
           />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="profile_photo">Profile Photo</Label>
+        <div className="flex items-center gap-4">
+          {formData.profile_photo_url && (
+            <img
+              src={formData.profile_photo_url}
+              alt="Profile preview"
+              className="h-16 w-16 rounded-full object-cover"
+            />
+          )}
+          <div className="flex-1">
+            <Input
+              id="profile_photo"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            {uploading && (
+              <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+            )}
+          </div>
+          {formData.profile_photo_url && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleChange('profile_photo_url', '')}
+            >
+              Remove
+            </Button>
+          )}
         </div>
       </div>
 

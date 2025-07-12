@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           id: string
           industry: string
+          jobs_created: number | null
           name: string
           nomination_id: string | null
           profile_photo_url: string | null
@@ -33,6 +34,7 @@ export type Database = {
           created_at?: string
           id?: string
           industry: string
+          jobs_created?: number | null
           name: string
           nomination_id?: string | null
           profile_photo_url?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           created_at?: string
           id?: string
           industry?: string
+          jobs_created?: number | null
           name?: string
           nomination_id?: string | null
           profile_photo_url?: string | null
