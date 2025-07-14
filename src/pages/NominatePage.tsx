@@ -73,6 +73,24 @@ const NominatePage = () => {
 
       if (error) throw error;
 
+      // Send email notification to admin
+      try {
+        await supabase.functions.invoke('send-nomination-notification', {
+          body: {
+            entrepreneur_name: formData.entrepreneurName,
+            entrepreneur_phone: formData.entrepreneurPhone,
+            business_name: formData.businessName,
+            business_location: formData.businessLocation,
+            business_type: formData.businessType,
+            nominator_name: formData.nominatorName,
+            nominator_phone: formData.nominatorPhone,
+          }
+        });
+      } catch (emailError) {
+        console.error('Error sending notification email:', emailError);
+        // Don't fail the nomination if email fails
+      }
+
       setIsSubmitted(true);
 
       toast({

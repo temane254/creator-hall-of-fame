@@ -54,6 +54,8 @@ export function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntrepreneur, setEditingEntrepreneur] = useState<Entrepreneur | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [approvedEntrepreneurName, setApprovedEntrepreneurName] = useState('');
 
   useEffect(() => {
     console.log(user);
@@ -199,10 +201,10 @@ export function AdminDashboard() {
       // Refresh entrepreneurs list
       fetchEntrepreneurs();
       
-      toast({
-        title: "Success",
-        description: "Entrepreneur profile created successfully",
-      });
+      // Show success dialog
+      setApprovedEntrepreneurName(nomination.entrepreneur_name);
+      setApprovalDialogOpen(true);
+      
     } catch (error) {
       console.error('Error creating entrepreneur:', error);
       toast({
@@ -448,17 +450,19 @@ export function AdminDashboard() {
                             >
                               Reject
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                const textarea = document.getElementById(`notes-${nomination.id}`) as HTMLTextAreaElement;
-                                updateNominationStatus(nomination.id, 'pending', textarea?.value);
-                              }}
-                              disabled={nomination.status === 'pending'}
-                            >
-                              Reset
-                            </Button>
+                            {nomination.status !== 'approved' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const textarea = document.getElementById(`notes-${nomination.id}`) as HTMLTextAreaElement;
+                                  updateNominationStatus(nomination.id, 'pending', textarea?.value);
+                                }}
+                                disabled={nomination.status === 'pending'}
+                              >
+                                Reset
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -612,6 +616,35 @@ export function AdminDashboard() {
                 )}
               </DialogContent>
             </Dialog>
+
+            {/* Approval Success Dialog */}
+            <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-center">Nomination Approved!</DialogTitle>
+                </DialogHeader>
+                <div className="text-center space-y-4">
+                  <div className="text-green-600 text-6xl">✓</div>
+                  <p className="text-lg">
+                    <strong>{approvedEntrepreneurName}</strong> has been successfully added to Featured Entrepreneurs.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    You can now update their profile details, upload photos, and add additional information in the Featured Entrepreneurs tab.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      setApprovalDialogOpen(false);
+                      // Switch to entrepreneurs tab
+                      const entrepreneursTab = document.querySelector('[value="entrepreneurs"]') as HTMLElement;
+                      entrepreneursTab?.click();
+                    }}
+                    className="w-full"
+                  >
+                    Go to Featured Entrepreneurs
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
       </main>
@@ -629,6 +662,7 @@ interface EntrepreneurFormProps {
 function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormProps) {
   const [formData, setFormData] = useState<Entrepreneur>(entrepreneur);
   const [uploading, setUploading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -648,12 +682,16 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
     }));
   };
 
-  const uploadImage = async (file: File) => {
+  const uploadImage = async (file: File, type: 'profile' | 'logo' = 'profile') => {
     try {
-      setUploading(true);
+      if (type === 'profile') {
+        setUploading(true);
+      } else {
+        setUploadingLogo(true);
+      }
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const fileName = `${type}-${Date.now()}.${fileExt}`;
       
       const { error } = await supabase.storage
         .from('entrepreneur-photos')
@@ -667,29 +705,33 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
 
       setFormData(prev => ({
         ...prev,
-        profile_photo_url: data.publicUrl
+        [type === 'profile' ? 'profile_photo_url' : 'company_logo_url']: data.publicUrl
       }));
 
       toast({
         title: "Success",
-        description: "Image uploaded successfully",
+        description: `${type === 'profile' ? 'Profile photo' : 'Company logo'} uploaded successfully`,
       });
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
         title: "Error",
-        description: "Failed to upload image",
+        description: `Failed to upload ${type === 'profile' ? 'profile photo' : 'company logo'}`,
         variant: "destructive",
       });
     } finally {
-      setUploading(false);
+      if (type === 'profile') {
+        setUploading(false);
+      } else {
+        setUploadingLogo(false);
+      }
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'logo' = 'profile') => {
     const file = e.target.files?.[0];
     if (file) {
-      uploadImage(file);
+      uploadImage(file, type);
     }
   };
 
@@ -789,14 +831,38 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="company_logo">Company Logo URL</Label>
-        <Input
-          id="company_logo"
-          value={formData.company_logo_url || ''}
-          onChange={(e) => handleChange('company_logo_url', e.target.value)}
-          placeholder="https://example.com/logo.png"
-          type="url"
-        />
+        <Label htmlFor="company_logo">Company Logo</Label>
+        <div className="flex items-center gap-4">
+          {formData.company_logo_url && (
+            <img
+              src={formData.company_logo_url}
+              alt="Company logo preview"
+              className="h-16 w-16 rounded object-contain border"
+            />
+          )}
+          <div className="flex-1">
+            <Input
+              id="company_logo"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileChange(e, 'logo')}
+              disabled={uploadingLogo}
+            />
+            {uploadingLogo && (
+              <p className="text-sm text-muted-foreground mt-1">Uploading logo...</p>
+            )}
+          </div>
+          {formData.company_logo_url && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleChange('company_logo_url', '')}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
