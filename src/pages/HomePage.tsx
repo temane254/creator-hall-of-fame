@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Award, Users, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/hero-image.jpg";
+import heroImage from "@/assets/kenyan-hero-image.jpg";
 
 const HomePage = () => {
   return (
@@ -29,14 +29,14 @@ const HomePage = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link to="/nominate">
-              <Button variant="gold" size="lg" className="text-lg px-8 py-6">
+              <Button variant="hero" size="lg" className="text-lg px-8 py-6">
                 Nominate an Entrepreneur
                 <ArrowRight className="ml-2" />
               </Button>
             </Link>
             
             <Link to="/entrepreneurs">
-              <Button variant="hero" size="lg" className="text-lg px-8 py-6">
+              <Button variant="gold" size="lg" className="text-lg px-8 py-6">
                 View Featured Entrepreneurs
                 <Users className="ml-2" />
               </Button>

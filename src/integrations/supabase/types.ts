@@ -16,42 +16,57 @@ export type Database = {
     Tables: {
       entrepreneurs: {
         Row: {
+          badge_photo_url: string | null
           bio: string | null
           company_logo_url: string | null
+          company_name: string | null
           created_at: string
+          email: string | null
           id: string
           industry: string
           jobs_created: number | null
           name: string
           nomination_id: string | null
+          pinned: boolean | null
           profile_photo_url: string | null
           updated_at: string
+          website: string | null
           whatsapp_number: string | null
         }
         Insert: {
+          badge_photo_url?: string | null
           bio?: string | null
           company_logo_url?: string | null
+          company_name?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           industry: string
           jobs_created?: number | null
           name: string
           nomination_id?: string | null
+          pinned?: boolean | null
           profile_photo_url?: string | null
           updated_at?: string
+          website?: string | null
           whatsapp_number?: string | null
         }
         Update: {
+          badge_photo_url?: string | null
           bio?: string | null
           company_logo_url?: string | null
+          company_name?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           industry?: string
           jobs_created?: number | null
           name?: string
           nomination_id?: string | null
+          pinned?: boolean | null
           profile_photo_url?: string | null
           updated_at?: string
+          website?: string | null
           whatsapp_number?: string | null
         }
         Relationships: [

@@ -278,18 +278,13 @@ const NominatePage = () => {
                   <Label htmlFor="businessType" className="text-sm font-medium">
                     Type of Business/Industry *
                   </Label>
-                  <Select value={formData.businessType} onValueChange={(value) => handleInputChange("businessType", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select business type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {businessTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="businessType"
+                    value={formData.businessType}
+                    onChange={(e) => handleInputChange("businessType", e.target.value)}
+                    placeholder="Enter the type of business or industry"
+                    required
+                  />
                 </div>
               </div>
 

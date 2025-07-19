@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, MapPin, Calendar, ArrowRight } from "lucide-react";
+import { ArrowLeft, Users, MapPin, Calendar, ArrowRight, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,25 +15,43 @@ interface Entrepreneur {
   profile_photo_url: string;
   company_logo_url: string;
   whatsapp_number: string;
+  pinned: boolean;
 }
 
 const EntrepreneursPage = () => {
   const [entrepreneurs, setEntrepreneurs] = useState<Entrepreneur[]>([]);
+  const [filteredEntrepreneurs, setFilteredEntrepreneurs] = useState<Entrepreneur[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIndustry, setSelectedIndustry] = useState<string>("all");
+  const [industries, setIndustries] = useState<string[]>([]);
 
   useEffect(() => {
     fetchEntrepreneurs();
   }, []);
+
+  useEffect(() => {
+    if (selectedIndustry === "all") {
+      setFilteredEntrepreneurs(entrepreneurs);
+    } else {
+      setFilteredEntrepreneurs(entrepreneurs.filter(e => e.industry === selectedIndustry));
+    }
+  }, [selectedIndustry, entrepreneurs]);
 
   const fetchEntrepreneurs = async () => {
     try {
       const { data, error } = await supabase
         .from('entrepreneurs')
         .select('*')
+        .order('pinned', { ascending: false })
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       setEntrepreneurs(data || []);
+      setFilteredEntrepreneurs(data || []);
+      
+      // Extract unique industries
+      const uniqueIndustries = [...new Set((data || []).map(e => e.industry))];
+      setIndustries(uniqueIndustries);
     } catch (error) {
       console.error('Error fetching entrepreneurs:', error);
     } finally {
@@ -66,40 +85,30 @@ const EntrepreneursPage = () => {
           </p>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="text-center shadow-card">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-primary mb-2">
-                {entrepreneurs.length}
-              </div>
-              <p className="text-muted-foreground">Featured Entrepreneurs</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="text-center shadow-card">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-gold mb-2">
-                {entrepreneurs.length * 5}+
-              </div>
-              <p className="text-muted-foreground">Jobs Created</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="text-center shadow-card">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-primary mb-2">
-                {new Set(entrepreneurs.map(e => e.industry)).size}
-              </div>
-              <p className="text-muted-foreground">Industries Represented</p>
-            </CardContent>
-          </Card>
+        {/* Search by Industry */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center gap-4">
+            <Search className="w-5 h-5 text-muted-foreground" />
+            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Search by industry" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Industries</SelectItem>
+                {industries.map((industry) => (
+                  <SelectItem key={industry} value={industry}>
+                    {industry}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Entrepreneurs Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {entrepreneurs.length > 0 ? (
-            entrepreneurs.map((entrepreneur) => (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {filteredEntrepreneurs.length > 0 ? (
+            filteredEntrepreneurs.map((entrepreneur) => (
               <Card key={entrepreneur.id} className="group shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
                 <CardHeader className="text-center">
                   <div className="relative mx-auto mb-4">
@@ -129,9 +138,6 @@ const EntrepreneursPage = () => {
                     </Badge>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {entrepreneur.bio ? entrepreneur.bio.substring(0, 150) + "..." : "Featured entrepreneur making a difference in their community."}
-                  </p>
                   
                   <Link to={`/entrepreneur/${entrepreneur.id}`} className="block">
                     <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -148,6 +154,36 @@ const EntrepreneursPage = () => {
               <p className="text-sm text-muted-foreground mt-2">Check back soon to see our amazing job creators!</p>
             </div>
           )}
+        </div>
+
+        {/* Stats Section - Moved to bottom */}
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <Card className="text-center shadow-card">
+            <CardContent className="pt-6">
+              <div className="text-3xl font-bold text-primary mb-2">
+                {entrepreneurs.length}
+              </div>
+              <p className="text-muted-foreground">Featured Entrepreneurs</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center shadow-card">
+            <CardContent className="pt-6">
+              <div className="text-3xl font-bold text-gold mb-2">
+                {entrepreneurs.length * 5}+
+              </div>
+              <p className="text-muted-foreground">Jobs Created</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center shadow-card">
+            <CardContent className="pt-6">
+              <div className="text-3xl font-bold text-primary mb-2">
+                {new Set(entrepreneurs.map(e => e.industry)).size}
+              </div>
+              <p className="text-muted-foreground">Industries Represented</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Call to Action */}
