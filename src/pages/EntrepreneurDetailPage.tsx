@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, MapPin, Calendar, MessageCircle, Mail, Upload, Pin, Trash2, Globe, Building } from "lucide-react";
+import { ArrowLeft, Users, Calendar, MessageCircle, Mail, Globe, Building } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import badgeImage from "@/assets/badge-of-honor.png";
@@ -31,8 +30,6 @@ const EntrepreneurDetailPage = () => {
   const { toast } = useToast();
   const [entrepreneur, setEntrepreneur] = useState<Entrepreneur | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -73,103 +70,7 @@ const EntrepreneurDetailPage = () => {
     window.open(`mailto:${entrepreneur.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_self');
   };
 
-  const handleBadgeUpload = async (file: File) => {
-    if (!entrepreneur || !user || profile?.role !== 'admin') return;
-    
-    setIsUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${entrepreneur.id}-badge-${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('entrepreneur-photos')
-        .upload(fileName, file);
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('entrepreneur-photos')
-        .getPublicUrl(fileName);
-      
-      const { error: updateError } = await supabase
-        .from('entrepreneurs')
-        .update({ badge_photo_url: publicUrl })
-        .eq('id', entrepreneur.id);
-      
-      if (updateError) throw updateError;
-      
-      setEntrepreneur(prev => prev ? { ...prev, badge_photo_url: publicUrl } : null);
-      
-      toast({
-        title: "Badge updated successfully!",
-        description: "The badge photo has been uploaded.",
-      });
-    } catch (error) {
-      console.error('Error uploading badge:', error);
-      toast({
-        title: "Error uploading badge",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handlePinToggle = async () => {
-    if (!entrepreneur || !user || profile?.role !== 'admin') return;
-    
-    try {
-      const { error } = await supabase
-        .from('entrepreneurs')
-        .update({ pinned: !entrepreneur.pinned })
-        .eq('id', entrepreneur.id);
-      
-      if (error) throw error;
-      
-      setEntrepreneur(prev => prev ? { ...prev, pinned: !prev.pinned } : null);
-      
-      toast({
-        title: entrepreneur.pinned ? "Entrepreneur unpinned" : "Entrepreneur pinned",
-        description: entrepreneur.pinned ? "Removed from top of list" : "Added to top of list",
-      });
-    } catch (error) {
-      console.error('Error toggling pin:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update pin status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!entrepreneur || !user || profile?.role !== 'admin') return;
-    
-    try {
-      const { error } = await supabase
-        .from('entrepreneurs')
-        .delete()
-        .eq('id', entrepreneur.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Entrepreneur deleted",
-        description: "The entrepreneur has been removed from the platform.",
-      });
-      
-      // Redirect to entrepreneurs page
-      window.location.href = '/entrepreneurs';
-    } catch (error) {
-      console.error('Error deleting entrepreneur:', error);
-      toast({
-        title: "Error deleting entrepreneur",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Admin actions are now handled in AdminDashboard only
 
   if (loading) {
     return (
@@ -209,53 +110,7 @@ const EntrepreneurDetailPage = () => {
           </Link>
         </div>
 
-        {/* Admin Controls */}
-        {profile?.role === 'admin' && (
-          <Card className="shadow-card mb-8 border-amber-200">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  onClick={handlePinToggle}
-                  variant={entrepreneur.pinned ? "default" : "outline"}
-                  size="sm"
-                >
-                  <Pin className="mr-2 w-4 h-4" />
-                  {entrepreneur.pinned ? "Unpin" : "Pin to Top"}
-                </Button>
-                
-                <Button
-                  onClick={() => setShowDeleteDialog(true)}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <Trash2 className="mr-2 w-4 h-4" />
-                  Delete
-                </Button>
-                
-                <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleBadgeUpload(file);
-                    }}
-                    className="hidden"
-                    id="badge-upload"
-                  />
-                  <label htmlFor="badge-upload">
-                    <Button asChild variant="outline" size="sm" disabled={isUploading}>
-                      <span>
-                        <Upload className="mr-2 w-4 h-4" />
-                        {isUploading ? "Uploading..." : "Upload Badge"}
-                      </span>
-                    </Button>
-                  </label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Admin note: All admin controls are now in the Admin Dashboard */}
 
         {/* Hero Section */}
         <Card className="shadow-elegant mb-8">
@@ -455,25 +310,6 @@ const EntrepreneurDetailPage = () => {
           </CardContent>
         </Card>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Entrepreneur</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete {entrepreneur.name}? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-4 mt-6">
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDelete}>
-                Delete
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

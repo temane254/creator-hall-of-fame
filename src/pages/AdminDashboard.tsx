@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Phone, MapPin, Building2, User, Calendar, Edit, Plus, Image, Upload, Briefcase } from 'lucide-react';
+import { Search, Phone, MapPin, Building2, User, Calendar, Edit, Plus, Image, Upload, Briefcase, Trash2, Pin, PinOff, Settings } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface Nomination {
   id: string;
@@ -41,6 +42,18 @@ interface Entrepreneur {
   jobs_created: number | null;
   created_at: string;
   updated_at: string;
+  email: string | null;
+  badge_photo_url: string | null;
+  pinned: boolean | null;
+  company_name: string | null;
+  website: string | null;
+}
+
+interface IndustryCategory {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function AdminDashboard() {
@@ -49,6 +62,7 @@ export function AdminDashboard() {
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [filteredNominations, setFilteredNominations] = useState<Nomination[]>([]);
   const [entrepreneurs, setEntrepreneurs] = useState<Entrepreneur[]>([]);
+  const [industryCategories, setIndustryCategories] = useState<IndustryCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -56,12 +70,17 @@ export function AdminDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [approvedEntrepreneurName, setApprovedEntrepreneurName] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entrepreneurToDelete, setEntrepreneurToDelete] = useState<string | null>(null);
+  const [industryDialogOpen, setIndustryDialogOpen] = useState(false);
+  const [newIndustryName, setNewIndustryName] = useState('');
 
   useEffect(() => {
     console.log(user);
     if (user && user?.role === 'authenticated') {
       fetchNominations();
       fetchEntrepreneurs();
+      fetchIndustryCategories();
     }
   }, [user]);
 
@@ -88,6 +107,20 @@ export function AdminDashboard() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchIndustryCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('industry_categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setIndustryCategories((data || []) as IndustryCategory[]);
+    } catch (error) {
+      console.error('Error fetching industry categories:', error);
     }
   };
 
@@ -118,6 +151,7 @@ export function AdminDashboard() {
       const { data, error } = await supabase
         .from('entrepreneurs')
         .select('*')
+        .order('pinned', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -194,6 +228,7 @@ export function AdminDashboard() {
           industry: nomination.business_type,
           whatsapp_number: nomination.entrepreneur_phone,
           nomination_id: nomination.id,
+          company_name: nomination.business_name,
         });
 
       if (error) throw error;
@@ -217,19 +252,26 @@ export function AdminDashboard() {
 
   const updateEntrepreneur = async (entrepreneur: Entrepreneur) => {
     try {
+      const updateData = {
+        name: entrepreneur.name,
+        bio: entrepreneur.bio,
+        industry: entrepreneur.industry,
+        profile_photo_url: entrepreneur.profile_photo_url,
+        company_logo_url: entrepreneur.company_logo_url,
+        whatsapp_number: entrepreneur.whatsapp_number,
+        jobs_created: entrepreneur.jobs_created,
+        email: entrepreneur.email,
+        badge_photo_url: entrepreneur.badge_photo_url,
+        pinned: entrepreneur.pinned,
+        company_name: entrepreneur.company_name,
+        website: entrepreneur.website,
+      };
+
       if (entrepreneur.id && entrepreneurs.find(ent => ent.id === entrepreneur.id)) {
         // Update existing entrepreneur
         const { error } = await supabase
           .from('entrepreneurs')
-          .update({
-            name: entrepreneur.name,
-            bio: entrepreneur.bio,
-            industry: entrepreneur.industry,
-            profile_photo_url: entrepreneur.profile_photo_url,
-            company_logo_url: entrepreneur.company_logo_url,
-            whatsapp_number: entrepreneur.whatsapp_number,
-            jobs_created: entrepreneur.jobs_created,
-          })
+          .update(updateData)
           .eq('id', entrepreneur.id);
 
         if (error) throw error;
@@ -242,15 +284,7 @@ export function AdminDashboard() {
         // Create new entrepreneur
         const { data, error } = await supabase
           .from('entrepreneurs')
-          .insert({
-            name: entrepreneur.name,
-            bio: entrepreneur.bio,
-            industry: entrepreneur.industry,
-            profile_photo_url: entrepreneur.profile_photo_url,
-            company_logo_url: entrepreneur.company_logo_url,
-            whatsapp_number: entrepreneur.whatsapp_number,
-            jobs_created: entrepreneur.jobs_created,
-          })
+          .insert(updateData)
           .select()
           .single();
 
@@ -272,6 +306,59 @@ export function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to save entrepreneur",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteEntrepreneur = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('entrepreneurs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setEntrepreneurs(prev => prev.filter(ent => ent.id !== id));
+      
+      toast({
+        title: "Success",
+        description: "Entrepreneur deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting entrepreneur:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete entrepreneur",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addIndustryCategory = async () => {
+    if (!newIndustryName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('industry_categories')
+        .insert({ name: newIndustryName.trim() });
+
+      if (error) throw error;
+
+      await fetchIndustryCategories();
+      setNewIndustryName('');
+      setIndustryDialogOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Industry category added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding industry category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add industry category",
         variant: "destructive",
       });
     }
@@ -315,9 +402,10 @@ export function AdminDashboard() {
 
       <main className="md:container mx-auto md:px-6 py-8">
         <Tabs defaultValue="nominations" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="nominations">Nominations</TabsTrigger>
             <TabsTrigger value="entrepreneurs">Featured Entrepreneurs</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="nominations" className="space-y-6">
@@ -331,7 +419,7 @@ export function AdminDashboard() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="search" className="">Search by name, location, or industry</Label>
+                    <Label htmlFor="search">Search by name, location, or industry</Label>
                     <Input
                       id="search"
                       placeholder="Search nominations..."
@@ -497,7 +585,12 @@ export function AdminDashboard() {
                         nomination_id: null,
                         jobs_created: 0,
                         created_at: '',
-                        updated_at: ''
+                        updated_at: '',
+                        email: '',
+                        badge_photo_url: '',
+                        pinned: false,
+                        company_name: '',
+                        website: ''
                       });
                       setIsDialogOpen(true);
                     }}
@@ -528,9 +621,14 @@ export function AdminDashboard() {
                                 </div>
                               )}
                               <div>
-                                <h3 className="text-lg font-semibold text-primary">
-                                  {entrepreneur.name}
-                                </h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-lg font-semibold text-primary">
+                                    {entrepreneur.name}
+                                  </h3>
+                                  {entrepreneur.pinned && (
+                                    <Pin className="h-4 w-4 text-primary" />
+                                  )}
+                                </div>
                                 <p className="text-sm text-muted-foreground">
                                   {entrepreneur.industry}
                                 </p>
@@ -551,10 +649,10 @@ export function AdminDashboard() {
                                 <span><strong>Jobs Created:</strong> {entrepreneur.jobs_created}</span>
                               </div>
                             )}
-                            {entrepreneur.company_logo_url && (
+                            {entrepreneur.company_name && (
                               <div className="flex items-center gap-2">
-                                <Image className="h-4 w-4 text-muted-foreground" />
-                                <span><strong>Company Logo:</strong> Available</span>
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span><strong>Company:</strong> {entrepreneur.company_name}</span>
                               </div>
                             )}
                           </div>
@@ -595,58 +693,145 @@ export function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Edit Entrepreneur Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingEntrepreneur?.id ? 'Edit Entrepreneur' : 'Add New Entrepreneur'}
-                  </DialogTitle>
-                </DialogHeader>
-                {editingEntrepreneur && (
-                  <EntrepreneurForm
-                    entrepreneur={editingEntrepreneur}
-                    onSave={updateEntrepreneur}
-                    onCancel={() => {
-                      setIsDialogOpen(false);
-                      setEditingEntrepreneur(null);
-                    }}
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
-
-            {/* Approval Success Dialog */}
-            <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-center">Nomination Approved!</DialogTitle>
-                </DialogHeader>
-                <div className="text-center space-y-4">
-                  <div className="text-green-600 text-6xl">✓</div>
-                  <p className="text-lg">
-                    <strong>{approvedEntrepreneurName}</strong> has been successfully added to Featured Entrepreneurs.
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    You can now update their profile details, upload photos, and add additional information in the Featured Entrepreneurs tab.
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      setApprovalDialogOpen(false);
-                      // Switch to entrepreneurs tab
-                      const entrepreneursTab = document.querySelector('[value="entrepreneurs"]') as HTMLElement;
-                      entrepreneursTab?.click();
-                    }}
-                    className="w-full"
-                  >
-                    Go to Featured Entrepreneurs
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Industry Categories Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Button onClick={() => setIndustryDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Industry Category
                   </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {industryCategories.map((category) => (
+                    <Badge key={category.id} variant="outline" className="p-2 justify-center">
+                      {category.name}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Entrepreneur Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingEntrepreneur?.id ? 'Edit Entrepreneur' : 'Add New Entrepreneur'}
+              </DialogTitle>
+            </DialogHeader>
+            {editingEntrepreneur && (
+              <EntrepreneurForm
+                entrepreneur={editingEntrepreneur}
+                industryCategories={industryCategories}
+                onSave={updateEntrepreneur}
+                onDelete={(id) => {
+                  setEntrepreneurToDelete(id);
+                  setDeleteDialogOpen(true);
+                }}
+                onCancel={() => {
+                  setIsDialogOpen(false);
+                  setEditingEntrepreneur(null);
+                }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Industry Category Dialog */}
+        <Dialog open={industryDialogOpen} onOpenChange={setIndustryDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Industry Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="industry-name">Industry Name</Label>
+                <Input
+                  id="industry-name"
+                  value={newIndustryName}
+                  onChange={(e) => setNewIndustryName(e.target.value)}
+                  placeholder="Enter industry name"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIndustryDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={addIndustryCategory}>
+                  Add Category
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the entrepreneur profile.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (entrepreneurToDelete) {
+                    deleteEntrepreneur(entrepreneurToDelete);
+                    setIsDialogOpen(false);
+                  }
+                  setDeleteDialogOpen(false);
+                  setEntrepreneurToDelete(null);
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Approval Success Dialog */}
+        <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center">Nomination Approved!</DialogTitle>
+            </DialogHeader>
+            <div className="text-center space-y-4">
+              <div className="text-green-600 text-6xl">✓</div>
+              <p className="text-lg">
+                <strong>{approvedEntrepreneurName}</strong> has been successfully added to Featured Entrepreneurs.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You can now update their profile details, upload photos, and add additional information in the Featured Entrepreneurs tab.
+              </p>
+              <Button 
+                onClick={() => {
+                  setApprovalDialogOpen(false);
+                  // Switch to entrepreneurs tab
+                  const entrepreneursTab = document.querySelector('[value="entrepreneurs"]') as HTMLElement;
+                  entrepreneursTab?.click();
+                }}
+                className="w-full"
+              >
+                Go to Featured Entrepreneurs
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
@@ -655,14 +840,17 @@ export function AdminDashboard() {
 // EntrepreneurForm component
 interface EntrepreneurFormProps {
   entrepreneur: Entrepreneur;
+  industryCategories: IndustryCategory[];
   onSave: (entrepreneur: Entrepreneur) => void;
+  onDelete: (id: string) => void;
   onCancel: () => void;
 }
 
-function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormProps) {
+function EntrepreneurForm({ entrepreneur, industryCategories, onSave, onDelete, onCancel }: EntrepreneurFormProps) {
   const [formData, setFormData] = useState<Entrepreneur>(entrepreneur);
   const [uploading, setUploading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBadge, setUploadingBadge] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -675,20 +863,18 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
     }
   };
 
-  const handleChange = (field: keyof Entrepreneur, value: string | number) => {
+  const handleChange = (field: keyof Entrepreneur, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const uploadImage = async (file: File, type: 'profile' | 'logo' = 'profile') => {
+  const uploadImage = async (file: File, type: 'profile' | 'logo' | 'badge' = 'profile') => {
     try {
-      if (type === 'profile') {
-        setUploading(true);
-      } else {
-        setUploadingLogo(true);
-      }
+      if (type === 'profile') setUploading(true);
+      else if (type === 'logo') setUploadingLogo(true);
+      else setUploadingBadge(true);
       
       const fileExt = file.name.split('.').pop();
       const fileName = `${type}-${Date.now()}.${fileExt}`;
@@ -703,32 +889,33 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
         .from('entrepreneur-photos')
         .getPublicUrl(fileName);
 
+      const urlField = type === 'profile' ? 'profile_photo_url' : 
+                       type === 'logo' ? 'company_logo_url' : 'badge_photo_url';
+
       setFormData(prev => ({
         ...prev,
-        [type === 'profile' ? 'profile_photo_url' : 'company_logo_url']: data.publicUrl
+        [urlField]: data.publicUrl
       }));
 
       toast({
         title: "Success",
-        description: `${type === 'profile' ? 'Profile photo' : 'Company logo'} uploaded successfully`,
+        description: `${type === 'profile' ? 'Profile photo' : type === 'logo' ? 'Company logo' : 'Badge'} uploaded successfully`,
       });
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
         title: "Error",
-        description: `Failed to upload ${type === 'profile' ? 'profile photo' : 'company logo'}`,
+        description: `Failed to upload ${type === 'profile' ? 'profile photo' : type === 'logo' ? 'company logo' : 'badge'}`,
         variant: "destructive",
       });
     } finally {
-      if (type === 'profile') {
-        setUploading(false);
-      } else {
-        setUploadingLogo(false);
-      }
+      if (type === 'profile') setUploading(false);
+      else if (type === 'logo') setUploadingLogo(false);
+      else setUploadingBadge(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'logo' = 'profile') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'logo' | 'badge' = 'profile') => {
     const file = e.target.files?.[0];
     if (file) {
       uploadImage(file, type);
@@ -750,28 +937,32 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
         </div>
         <div className="space-y-2">
           <Label htmlFor="industry">Industry *</Label>
-          <Input
-            id="industry"
-            value={formData.industry}
-            onChange={(e) => handleChange('industry', e.target.value)}
-            placeholder="Industry type"
-            required
-          />
+          <Select value={formData.industry} onValueChange={(value) => handleChange('industry', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select industry" />
+            </SelectTrigger>
+            <SelectContent>
+              {industryCategories.map((category) => (
+                <SelectItem key={category.id} value={category.name}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="bio">Bio</Label>
-        <Textarea
-          id="bio"
-          value={formData.bio || ''}
-          onChange={(e) => handleChange('bio', e.target.value)}
-          placeholder="Tell us about the entrepreneur..."
-          rows={4}
-        />
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            value={formData.email || ''}
+            onChange={(e) => handleChange('email', e.target.value)}
+            placeholder="entrepreneur@example.com"
+            type="email"
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="whatsapp">WhatsApp Number</Label>
           <Input
@@ -780,6 +971,39 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
             onChange={(e) => handleChange('whatsapp_number', e.target.value)}
             placeholder="+1234567890"
             type="tel"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bio">Entrepreneur's Services</Label>
+        <Textarea
+          id="bio"
+          value={formData.bio || ''}
+          onChange={(e) => handleChange('bio', e.target.value)}
+          placeholder="Describe the services this entrepreneur provides..."
+          rows={4}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="company_name">Company Name</Label>
+          <Input
+            id="company_name"
+            value={formData.company_name || ''}
+            onChange={(e) => handleChange('company_name', e.target.value)}
+            placeholder="Company name"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="website">Website</Label>
+          <Input
+            id="website"
+            value={formData.website || ''}
+            onChange={(e) => handleChange('website', e.target.value)}
+            placeholder="https://company.com"
+            type="url"
           />
         </div>
         <div className="space-y-2">
@@ -795,17 +1019,17 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="profile_photo">Profile Photo</Label>
-        <div className="flex items-center gap-4">
-          {formData.profile_photo_url && (
-            <img
-              src={formData.profile_photo_url}
-              alt="Profile preview"
-              className="h-16 w-16 rounded-full object-cover"
-            />
-          )}
-          <div className="flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="profile_photo">Profile Photo</Label>
+          <div className="space-y-2">
+            {formData.profile_photo_url && (
+              <img
+                src={formData.profile_photo_url}
+                alt="Profile preview"
+                className="h-20 w-20 rounded-full object-cover mx-auto"
+              />
+            )}
             <Input
               id="profile_photo"
               type="file"
@@ -814,33 +1038,21 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
               disabled={uploading}
             />
             {uploading && (
-              <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+              <p className="text-sm text-muted-foreground">Uploading...</p>
             )}
           </div>
-          {formData.profile_photo_url && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleChange('profile_photo_url', '')}
-            >
-              Remove
-            </Button>
-          )}
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="company_logo">Company Logo</Label>
-        <div className="flex items-center gap-4">
-          {formData.company_logo_url && (
-            <img
-              src={formData.company_logo_url}
-              alt="Company logo preview"
-              className="h-16 w-16 rounded object-contain border"
-            />
-          )}
-          <div className="flex-1">
+        <div className="space-y-2">
+          <Label htmlFor="company_logo">Company Logo</Label>
+          <div className="space-y-2">
+            {formData.company_logo_url && (
+              <img
+                src={formData.company_logo_url}
+                alt="Company logo preview"
+                className="h-20 w-20 rounded object-contain border mx-auto"
+              />
+            )}
             <Input
               id="company_logo"
               type="file"
@@ -849,29 +1061,67 @@ function EntrepreneurForm({ entrepreneur, onSave, onCancel }: EntrepreneurFormPr
               disabled={uploadingLogo}
             />
             {uploadingLogo && (
-              <p className="text-sm text-muted-foreground mt-1">Uploading logo...</p>
+              <p className="text-sm text-muted-foreground">Uploading logo...</p>
             )}
           </div>
-          {formData.company_logo_url && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleChange('company_logo_url', '')}
-            >
-              Remove
-            </Button>
-          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="badge_photo">Badge of Honor</Label>
+          <div className="space-y-2">
+            {formData.badge_photo_url && (
+              <img
+                src={formData.badge_photo_url}
+                alt="Badge preview"
+                className="h-20 w-20 rounded object-contain border mx-auto"
+              />
+            )}
+            <Input
+              id="badge_photo"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileChange(e, 'badge')}
+              disabled={uploadingBadge}
+            />
+            {uploadingBadge && (
+              <p className="text-sm text-muted-foreground">Uploading badge...</p>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">
-          {entrepreneur.id ? 'Update' : 'Create'} Entrepreneur
-        </Button>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="pinned"
+          checked={formData.pinned || false}
+          onChange={(e) => handleChange('pinned', e.target.checked)}
+          className="rounded border-gray-300"
+        />
+        <Label htmlFor="pinned">Pin to top of entrepreneurs list</Label>
+      </div>
+
+      <div className="flex justify-between gap-3 pt-4">
+        <div>
+          {entrepreneur.id && (
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={() => onDelete(entrepreneur.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit">
+            {entrepreneur.id ? 'Update' : 'Create'} Entrepreneur
+          </Button>
+        </div>
       </div>
     </form>
   );
