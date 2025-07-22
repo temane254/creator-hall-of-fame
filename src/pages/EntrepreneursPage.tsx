@@ -4,6 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, MapPin, Calendar, ArrowRight, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,6 +32,9 @@ const EntrepreneursPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("all");
   const [industries, setIndustries] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchEntrepreneurs();
@@ -35,7 +46,19 @@ const EntrepreneursPage = () => {
     } else {
       setFilteredEntrepreneurs(entrepreneurs.filter(e => e.industry === selectedIndustry));
     }
+    // Reset to first page when filtering
+    setCurrentPage(1);
   }, [selectedIndustry, entrepreneurs]);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredEntrepreneurs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedEntrepreneurs = filteredEntrepreneurs.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const fetchEntrepreneurs = async () => {
     try {
@@ -106,9 +129,9 @@ const EntrepreneursPage = () => {
         </div>
 
         {/* Entrepreneurs Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {filteredEntrepreneurs.length > 0 ? (
-            filteredEntrepreneurs.map((entrepreneur) => (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+          {paginatedEntrepreneurs.length > 0 ? (
+            paginatedEntrepreneurs.map((entrepreneur) => (
               <Card key={entrepreneur.id} className="group shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
                 <CardHeader className="text-center">
                   <div className="relative mx-auto mb-4">
@@ -155,6 +178,45 @@ const EntrepreneursPage = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex flex-col items-center gap-4 mb-12">
+            <p className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredEntrepreneurs.length)} of {filteredEntrepreneurs.length} entrepreneurs
+            </p>
+            
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
 
         {/* Stats Section - Moved to bottom */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
