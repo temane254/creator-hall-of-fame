@@ -165,14 +165,14 @@ const EntrepreneurDetailPage = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto">
                 <Button 
                   onClick={handleWhatsAppClick}
                   variant="hero" 
                   size="lg"
-                  className="flex-1 max-w-md"
+                  className="w-full sm:w-auto px-6 py-3 text-base"
                 >
-                  <MessageCircle className="mr-2" />
+                  <MessageCircle className="mr-2 w-4 h-4" />
                   WhatsApp for Services
                 </Button>
               </div>
@@ -286,24 +286,17 @@ const EntrepreneurDetailPage = () => {
 
         {/* Connect Section */}
         <Card className="shadow-elegant bg-gradient-hero text-primary-foreground">
-          <CardContent className="text-center p-8">
-            <h3 className="text-3xl font-bold mb-4">
-              Connect with {entrepreneur.name.split(' ')[0]}
-            </h3>
-            <p className="text-xl text-primary-foreground/90 mb-6 max-w-2xl mx-auto">
-              Reach out to learn more about their entrepreneurial journey, explore potential collaborations, or simply connect with a fellow business leader.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <CardContent className="text-center p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
               {entrepreneur.email && (
                 <Button 
                   onClick={handleEmailClick}
                   variant="gold" 
                   size="lg"
-                  className="text-lg px-8 py-4"
+                  className="w-full sm:w-auto text-base px-6 py-3"
                 >
-                  <Mail className="mr-2" />
-                  Submit CV for Future Opportunities
+                  <Mail className="mr-2 w-4 h-4" />
+                  Submit CV
                 </Button>
               )}
             </div>

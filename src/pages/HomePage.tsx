@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Award, Users, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/kenyan-hero-image.jpg";
+import heroImage from "/lovable-uploads/98b37791-7ffa-446c-a8d5-99e37a13da70.png";
 
 const HomePage = () => {
   return (
