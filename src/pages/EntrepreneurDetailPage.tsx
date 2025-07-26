@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, Calendar, MessageCircle, Mail, Globe, Building } from "lucide-react";
+import { ArrowLeft, Users, Calendar, Phone, Mail, Globe, Building } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useParams } from "react-router-dom";
@@ -100,8 +100,13 @@ const EntrepreneurDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle py-12 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-subtle py-12 px-6 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-gold/5"></div>
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-48 -translate-y-48"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl translate-x-48 translate-y-48"></div>
+      
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Navigation */}
         <div className="mb-8">
           <Link to="/entrepreneurs" className="inline-flex items-center text-primary hover:text-primary-light transition-colors">
@@ -113,16 +118,16 @@ const EntrepreneurDetailPage = () => {
         {/* Admin note: All admin controls are now in the Admin Dashboard */}
 
         {/* Hero Section */}
-        <Card className="shadow-elegant mb-8">
+        <Card className="shadow-elegant mb-8 bg-card/80 backdrop-blur-sm border border-border/50">
           <CardContent className="p-8">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="flex flex-col md:flex-row gap-6 items-center justify-center">
               {/* Profile Image */}
               <div className="text-center">
                 <div className="relative inline-block">
                   <img
                     src={entrepreneur.profile_photo_url || "/placeholder.svg"}
                     alt={entrepreneur.name}
-                    className="w-48 h-48 rounded-full object-cover border-4 border-gold/30 shadow-gold"
+                    className="w-32 h-32 md:w-48 md:h-48 rounded-full object-cover border-4 border-gold/30 shadow-gold"
                   />
                 </div>
               </div>
@@ -132,7 +137,7 @@ const EntrepreneurDetailPage = () => {
                 <img
                   src={entrepreneur.badge_photo_url || badgeImage}
                   alt="Badge of Honor"
-                  className="w-48 h-48 rounded-full object-cover border-4 border-gold/30 shadow-gold"
+                  className="w-24 h-24 md:w-40 md:h-40 rounded-full object-cover border-4 border-gold/30 shadow-gold"
                 />
               </div>
             </div>
@@ -168,11 +173,10 @@ const EntrepreneurDetailPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto">
                 <Button 
                   onClick={handleWhatsAppClick}
-                  variant="hero" 
                   size="lg"
-                  className="w-full sm:w-auto px-6 py-3 text-base"
+                  className="w-full sm:w-auto px-6 py-3 text-base bg-green-500 hover:bg-green-600 text-white border-0"
                 >
-                  <MessageCircle className="mr-2 w-4 h-4" />
+                  <Phone className="mr-2 w-4 h-4" />
                   WhatsApp for Services
                 </Button>
               </div>
