@@ -109,8 +109,13 @@ const NominatePage = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center px-6">
-        <Card className="max-w-2xl w-full shadow-elegant">
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center px-6 relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-gold/5"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-48 -translate-y-48"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl translate-x-48 translate-y-48"></div>
+        
+        <Card className="max-w-2xl w-full shadow-elegant bg-card/80 backdrop-blur-sm border border-border/50 relative z-10">
           <CardHeader className="text-center">
             <div className="bg-gradient-gold rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-10 h-10 text-foreground" />
@@ -145,8 +150,14 @@ const NominatePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle py-12 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-subtle py-12 px-6 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-gold/5"></div>
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/8 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/8 rounded-full blur-3xl"></div>
+      <div className="absolute top-1/3 right-1/4 w-48 h-48 bg-gradient-to-r from-primary/10 to-gold/10 rounded-full blur-2xl"></div>
+      
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-12">
           <Link to="/" className="inline-flex items-center text-primary hover:text-primary-light mb-6 transition-colors">
@@ -164,7 +175,7 @@ const NominatePage = () => {
         </div>
 
         {/* Guidelines */}
-        <Card className="mb-8 shadow-card">
+        <Card className="mb-8 shadow-card bg-card/80 backdrop-blur-sm border border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">
               <Award className="mr-3 text-gold" />
@@ -196,7 +207,7 @@ const NominatePage = () => {
         </Card>
 
         {/* Nomination Form */}
-        <Card className="shadow-elegant">
+        <Card className="shadow-elegant bg-card/80 backdrop-blur-sm border border-border/50">
           <CardHeader>
             <CardTitle className="text-2xl">Nomination Form</CardTitle>
             <CardDescription>

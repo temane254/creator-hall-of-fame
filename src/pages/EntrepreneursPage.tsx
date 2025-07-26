@@ -90,8 +90,13 @@ const EntrepreneursPage = () => {
     );
   }
   return (
-    <div className="min-h-screen bg-gradient-subtle py-12 px-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-subtle py-12 px-6 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-gold/5"></div>
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-48 -translate-y-48"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl translate-x-48 translate-y-48"></div>
+      
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-12">
           <Link to="/" className="inline-flex items-center text-primary hover:text-primary-light mb-6 transition-colors">
@@ -129,43 +134,42 @@ const EntrepreneursPage = () => {
         </div>
 
         {/* Entrepreneurs Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {paginatedEntrepreneurs.length > 0 ? (
             paginatedEntrepreneurs.map((entrepreneur) => (
-              <Card key={entrepreneur.id} className="group shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
-                <CardHeader className="text-center">
+              <Card key={entrepreneur.id} className="group shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2 bg-card/80 backdrop-blur-sm border border-border/50">
+                <CardHeader className="text-center p-4">
                   <div className="relative mx-auto mb-4">
                     <img
                       src={entrepreneur.profile_photo_url || "/placeholder.svg"}
                       alt={entrepreneur.name}
-                      className="w-24 h-24 rounded-full object-cover border-4 border-gold/20 group-hover:border-gold/50 transition-colors"
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-gold/20 group-hover:border-gold/50 transition-colors"
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-gradient-gold rounded-full p-2">
-                      <Users className="w-4 h-4 text-foreground" />
+                    <div className="absolute -bottom-2 -right-2 bg-gradient-gold rounded-full p-1.5">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-foreground" />
                     </div>
                   </div>
                   
-                  <CardTitle className="text-xl font-bold text-foreground">
+                  <CardTitle className="text-lg sm:text-xl font-bold text-foreground break-words">
                     {entrepreneur.name}
                   </CardTitle>
                   
-                  <CardDescription className="font-semibold text-primary">
+                  <CardDescription className="font-semibold text-primary text-sm">
                     Featured Entrepreneur
                   </CardDescription>
                 </CardHeader>
                 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-4 pt-0">
                   <div className="flex items-center justify-center">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                       {entrepreneur.industry}
                     </Badge>
                   </div>
                   
-                  
                   <Link to={`/entrepreneur/${entrepreneur.id}`} className="block">
-                    <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      View Entrepreneur
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                    <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors text-sm py-2 px-3">
+                      <span className="truncate">View Entrepreneur</span>
+                      <ArrowRight className="ml-2 w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     </Button>
                   </Link>
                 </CardContent>
