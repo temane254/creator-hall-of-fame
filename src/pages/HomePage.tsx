@@ -2,9 +2,38 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Award, Users, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import heroImage from "/lovable-uploads/98b37791-7ffa-446c-a8d5-99e37a13da70.png";
 
 const HomePage = () => {
+  useEffect(() => {
+    // Update page title and meta description for SEO
+    document.title = "Job Creators Hall of Fame - Celebrating Visionary Entrepreneurs";
+    
+    // Add structured data for the homepage
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Job Creators Hall of Fame",
+      "description": "Celebrating visionary entrepreneurs who create opportunities, drive innovation, and transform communities through their businesses",
+      "url": "https://your-domain.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://your-domain.com/entrepreneurs?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    };
+    
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Hero Section */}

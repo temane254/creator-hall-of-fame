@@ -37,7 +37,34 @@ const EntrepreneursPage = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
+    // Update page title and meta description for SEO
+    document.title = "Featured Entrepreneurs - Job Creators Hall of Fame";
+    
+    // Add meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Browse our featured entrepreneurs who have created jobs and made significant contributions to their communities. Discover inspiring business leaders from various industries.');
+    }
+    
+    // Add structured data for the entrepreneurs page
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Featured Entrepreneurs",
+      "description": "Browse our featured entrepreneurs who have created jobs and made significant contributions to their communities",
+      "url": "https://your-domain.com/entrepreneurs"
+    };
+    
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    
     fetchEntrepreneurs();
+    
+    return () => {
+      document.head.removeChild(script);
+    };
   }, []);
 
   useEffect(() => {

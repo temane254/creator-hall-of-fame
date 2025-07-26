@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,34 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const NominatePage = () => {
+  useEffect(() => {
+    // Update page title and meta description for SEO
+    document.title = "Nominate an Entrepreneur - Job Creators Hall of Fame";
+    
+    // Add meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Nominate a visionary entrepreneur who has created jobs and made a positive impact in their community. Help us recognize outstanding business leaders.');
+    }
+    
+    // Add structured data for the nomination page
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Nominate an Entrepreneur",
+      "description": "Nominate a visionary entrepreneur who has created jobs and made a positive impact in their community",
+      "url": "https://your-domain.com/nominate"
+    };
+    
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
   const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
