@@ -300,7 +300,7 @@ const EntrepreneurDetailPage = () => {
                   className="w-full sm:w-auto text-base px-6 py-3"
                 >
                   <Mail className="mr-2 w-4 h-4" />
-                  Submit CV
+                  Submit CV for Future Opportunities
                 </Button>
               )}
             </div>
