@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/analytics/ga';
 
 export function AuthPage() {
   const { user, signIn, signUp, loading } = useAuth();
@@ -34,11 +35,13 @@ export function AuthPage() {
         description: error.message,
         variant: "destructive",
       });
+      trackEvent("auth_login_error", { method: "email_password" });
     } else {
       toast({
         title: "Success",
         description: "Signed in successfully!",
       });
+      trackEvent("auth_login", { method: "email_password" });
     }
     
     setIsLoading(false);
@@ -61,11 +64,13 @@ export function AuthPage() {
         description: error.message,
         variant: "destructive",
       });
+      trackEvent("auth_signup_error", { method: "email_password" });
     } else {
       toast({
         title: "Success",
         description: "Account created! Please check your email to confirm your account.",
       });
+      trackEvent("auth_signup", { method: "email_password" });
     }
     
     setIsLoading(false);

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import { TrackPageView } from "@/analytics/TrackPageView";
 import HomePage from "./pages/HomePage";
 import NominatePage from "./pages/NominatePage";
 import EntrepreneursPage from "./pages/EntrepreneursPage";
@@ -21,6 +22,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <TrackPageView />
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/nominate" element={<NominatePage />} />

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Award, CheckCircle, Users, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/analytics/ga";
 
 const NominatePage = () => {
   useEffect(() => {
@@ -76,6 +77,9 @@ const NominatePage = () => {
     // Basic validation
     const requiredFields = Object.values(formData);
     if (requiredFields.some(field => !field.trim())) {
+      trackEvent("nomination_validation_error", {
+        result: "missing_required_fields",
+      });
       toast({
         title: "Please fill in all fields",
         description: "All fields are required to submit your nomination.",
@@ -119,6 +123,10 @@ const NominatePage = () => {
         // Don't fail the nomination if email fails
       }
 
+      trackEvent("nomination_submit", {
+        business_type: formData.businessType,
+      });
+
       setIsSubmitted(true);
 
       toast({
@@ -127,6 +135,7 @@ const NominatePage = () => {
       });
     } catch (error) {
       console.error('Error submitting nomination:', error);
+      trackEvent("nomination_submit_error", { result: "error" });
       toast({
         title: "Error",
         description: "There was an error submitting your nomination. Please try again.",
