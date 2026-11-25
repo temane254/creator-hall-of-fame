@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Award, Users, Globe } from "lucide-react";
+import { ArrowRight, Award, Users, Globe, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import heroImage from "/lovable-uploads/98b37791-7ffa-446c-a8d5-99e37a13da70.png";
@@ -68,6 +68,13 @@ const HomePage = () => {
               <Button variant="gold" size="lg" className="text-lg px-8 py-6">
                 View Featured Entrepreneurs
                 <Users className="ml-2" />
+              </Button>
+            </Link>
+
+            <Link to="/jobs">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-primary-foreground/50 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20">
+                Job Opportunities
+                <Briefcase className="ml-2" />
               </Button>
             </Link>
             

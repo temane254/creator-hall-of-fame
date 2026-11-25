@@ -10,13 +10,16 @@ import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/analytics/ga';
 
 export function AuthPage() {
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, isAdmin, signIn, signUp, loading } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if already authenticated
-  if (user && !loading) {
+  if (user && !loading && isAdmin === true) {
     return <Navigate to="/admin" replace />;
+  }
+
+  if (user && !loading && isAdmin === false) {
+    return <Navigate to="/" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,10 +79,10 @@ export function AuthPage() {
     setIsLoading(false);
   };
 
-  if (loading) {
+  if (loading || (user && isAdmin === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div>Loading...</div>
+        <div>Checking account access…</div>
       </div>
     );
   }

@@ -9,6 +9,7 @@ import HomePage from "./pages/HomePage";
 import NominatePage from "./pages/NominatePage";
 import EntrepreneursPage from "./pages/EntrepreneursPage";
 import EntrepreneurDetailPage from "./pages/EntrepreneurDetailPage";
+import JobOpportunitiesPage from "./pages/JobOpportunitiesPage";
 import { AuthPage } from "./pages/AuthPage";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/" element={<HomePage />} />
             <Route path="/nominate" element={<NominatePage />} />
             <Route path="/entrepreneurs" element={<EntrepreneursPage />} />
+            <Route path="/jobs" element={<JobOpportunitiesPage />} />
             <Route path="/entrepreneur/:id" element={<EntrepreneurDetailPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<AdminDashboard />} />

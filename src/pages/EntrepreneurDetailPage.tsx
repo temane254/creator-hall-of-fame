@@ -22,6 +22,7 @@ interface Entrepreneur {
   website: string;
   email: string;
   pinned: boolean;
+  jobs_created: number | null;
 }
 
 const EntrepreneurDetailPage = () => {
@@ -185,34 +186,13 @@ const EntrepreneurDetailPage = () => {
           </CardContent>
         </Card>
 
-        {/* Entrepreneur's Services */}
-        <Card className="shadow-card mb-8">
-          <CardContent className="p-8">
-            <h3 className="text-2xl font-bold text-foreground mb-6 border-b border-border pb-3">
-              Entrepreneur's Services
-            </h3>
-            
-            <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
-              {entrepreneur.bio ? (
-                entrepreneur.bio.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4 last:mb-0">
-                    {paragraph}
-                  </p>
-                ))
-              ) : (
-                <p>This entrepreneur is making a positive impact in their community through job creation and business innovation.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Company Information */}
         <Card className="shadow-card mb-8">
           <CardContent className="p-8">
             <h3 className="text-2xl font-bold text-foreground mb-6 border-b border-border pb-3">
               Company Information
             </h3>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
@@ -257,6 +237,27 @@ const EntrepreneurDetailPage = () => {
           </CardContent>
         </Card>
 
+        {/* Entrepreneur's Services */}
+        <Card className="shadow-card mb-8">
+          <CardContent className="p-8">
+            <h3 className="text-2xl font-bold text-foreground mb-6 border-b border-border pb-3">
+              Entrepreneur's Services
+            </h3>
+            
+            <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
+              {entrepreneur.bio ? (
+                entrepreneur.bio.split('\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4 last:mb-0">
+                    {paragraph}
+                  </p>
+                ))
+              ) : (
+                <p>Services have not been listed yet.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Impact Metrics */}
         <Card className="shadow-card mb-8">
           <CardContent className="p-8">
@@ -270,7 +271,7 @@ const EntrepreneurDetailPage = () => {
                   <Users className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <div className="text-3xl font-bold text-primary mb-2">
-                  3+
+                  {entrepreneur.jobs_created ?? "—"}
                 </div>
                 <p className="text-muted-foreground">Jobs Created</p>
               </div>

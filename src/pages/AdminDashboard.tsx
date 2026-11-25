@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { JobOpportunityManager } from '@/components/JobOpportunityManager';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,7 +58,7 @@ interface IndustryCategory {
 }
 
 export function AdminDashboard() {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, isAdmin } = useAuth();
   const { toast } = useToast();
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [filteredNominations, setFilteredNominations] = useState<Nomination[]>([]);
@@ -76,13 +77,12 @@ export function AdminDashboard() {
   const [newIndustryName, setNewIndustryName] = useState('');
 
   useEffect(() => {
-    console.log(user);
-    if (user && user?.role === 'authenticated') {
+    if (isAdmin === true) {
       fetchNominations();
       fetchEntrepreneurs();
       fetchIndustryCategories();
     }
-  }, [user]);
+  }, [isAdmin]);
 
   useEffect(() => {
     filterNominations();
@@ -372,11 +372,11 @@ export function AdminDashboard() {
     }
   };
 
-  if (!loading && (!user || user?.role !== 'authenticated')) {
+  if (!loading && isAdmin === false) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (loading || isLoading) {
+  if (loading || isAdmin === null || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div>Loading...</div>
@@ -402,9 +402,10 @@ export function AdminDashboard() {
 
       <main className="md:container mx-auto md:px-6 py-8">
         <Tabs defaultValue="nominations" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
             <TabsTrigger value="nominations">Nominations</TabsTrigger>
-            <TabsTrigger value="entrepreneurs">Featured Entrepreneurs</TabsTrigger>
+            <TabsTrigger value="entrepreneurs">Entrepreneurs</TabsTrigger>
+            <TabsTrigger value="jobs">Job Opportunities</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -693,6 +694,10 @@ export function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="jobs" className="space-y-6">
+            <JobOpportunityManager />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
